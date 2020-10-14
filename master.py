@@ -166,7 +166,7 @@ class MasterService(rpyc.Service):
     def alloc_blocks(self,dest,num):
       blocks,online = [],[]
       for storage in self.__class__.storages.keys():
-        if self.isconnected(id):
+        if self.isconnected(storage):
           online.append(storage)
       if(len(online) < self.__class__.replication_factor):
         return None

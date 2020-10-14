@@ -6,9 +6,8 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
-def avaible(ip,port):
-  hostname = ip+":"+str(port)
-  response = os.system("ping -c 1 " + hostname)
+def available(ip):
+  response = os.system("ping -w 1 " +ip+ " > /dev/null")
   if response == 0:
     return True
   else:
@@ -17,7 +16,7 @@ def avaible(ip,port):
 def write_to_storage(block_uuid,data,storage):
   LOG.info("sending: " + str(block_uuid) + str(storage))
   host,port=storage
-  if avaible(host,port):
+  if available(host):
     con=rpyc.connect(host,port=port)
     storage = con.root.storage()
     storage.put(block_uuid,data,storage)
@@ -25,7 +24,7 @@ def write_to_storage(block_uuid,data,storage):
 def read_from_storage(block_uuid,storage):
   LOG.info("downloading block from: " + str(storage))
   host,port = storage
-  if avaible(host,port):
+  if available(host):
     con=rpyc.connect(host,port=port)
     storage = con.root.storage()
     return storage.get(block_uuid)
@@ -70,7 +69,7 @@ def info(master,fname):
 
 def remove_from_storage(block_uuid,storage):
   host,port = storage
-  if avaible(host,port):
+  if available(host):
     con=rpyc.connect(host,port=port)
     storage = con.root.storage()
     storage.rmv(block_uuid)
