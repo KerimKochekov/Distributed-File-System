@@ -47,6 +47,9 @@ class MasterService(rpyc.Service):
     replication_factor = 0
     def isconnected(self,id):
       return (id in self.__class__.marked) and self.__class__.marked[id] == True
+      
+    def exposed_connected(self,id):
+      return (id in self.__class__.marked) and self.__class__.marked[id] == True
 
     def exposed_connect_storage(self,host,port):
       print("Hello ",host,port)      
