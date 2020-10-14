@@ -4,6 +4,7 @@ import sys
 import socket
 import signal
 import os
+import requests
 
 from rpyc.utils.server import ThreadedServer
 
@@ -55,13 +56,17 @@ class StorageService(rpyc.Service):
       con=rpyc.connect(host,port=port)
       storage = con.root.storage()
       storage.put(block_uuid,data,storages)
+def get_ip():
+  response = requests.get('http://ipinfo.io').text
+  l = response.find("ip")+6
+  r = response.find(",")-1
+  return response[l:r]
 
 def main(args):
   global master_ip, master_port
   master_ip, master_port = args[0], int(args[1])
 
-  hostname = socket.gethostname()  
-  ip,port = socket.gethostbyname(hostname),8888
+  ip,port = get_ip(),8888
   con = rpyc.connect(master_ip,master_port,config={"allow_all_attrs": True})
   master = con.root.Master()   
   master.connect_storage(ip,port)
