@@ -45,10 +45,13 @@ class MasterService(rpyc.Service):
     marked = {}
     block_size = 0
     replication_factor = 0
+    def isconnected(self,id):
+      return (id in self.__class__.marked) and self.__class__.marked[id] == True
+
     def exposed_connect_storage(self,host,port):
       print("Hello ",host,port)      
       id=0
-      while (id in self.__class__.marked) and self.__class__.marked[id] == True:
+      while self.isconnected(id):
         id=id+1
       print("Here is your id",id)
       self.__class__.storages[id] = (host,port)
@@ -57,7 +60,7 @@ class MasterService(rpyc.Service):
     def exposed_disconnect_storage(self,host,port): 
       print("Bye ",host,port)            
       id=0
-      while ((self.__class__.marked[id]==True)&(self.__class__.storages[id] == (host,port)))==False:
+      while (self.isconnected(id)&(self.__class__.storages[id] == (host,port)))==False:
         id=id+1
       self.__class__.marked[id] = False
 
@@ -71,12 +74,11 @@ class MasterService(rpyc.Service):
       self.__class__.metadata = dict()
       self.__class__.tree[DATA_DIR].append('$')
       for storage in self.__class__.storages:
-        if self.__class__.marked[storage] == False:
-          continue
-        host,port = self.__class__.storages[storage]
-        con = rpyc.connect(host,port=port)
-        storage = con.root.storage()
-        storage.init()
+        if self.isconnected(storage):
+          host,port = self.__class__.storages[storage]
+          con = rpyc.connect(host,port=port)
+          storage = con.root.storage()
+          storage.init()
       return "OK"
 
     def exposed_mkdir(self,dir):
@@ -164,7 +166,7 @@ class MasterService(rpyc.Service):
     def alloc_blocks(self,dest,num):
       blocks,online = [],[]
       for storage in self.__class__.storages.keys():
-        if self.__class__.marked[storage] == True:
+        if self.isconnected(id):
           online.append(storage)
       if(len(online) < self.__class__.replication_factor):
         return None

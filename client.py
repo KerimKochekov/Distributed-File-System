@@ -6,21 +6,44 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
+def avaible(ip,port):
+  hostname = ip+":"+str(port)
+  response = os.system("ping -c 1 " + hostname)
+  if response == 0:
+    return True
+  else:
+    return False
 
-def write_to_storage(block_uuid,data,storages):
-  LOG.info("sending: " + str(block_uuid) + str(storages))
-  storage=storages[0]
-  storages=storages[1:]
+def write_to_storage(block_uuid,data,storage):
+  LOG.info("sending: " + str(block_uuid) + str(storage))
   host,port=storage
-  con=rpyc.connect(host,port=port)
-  storage = con.root.storage()
-  storage.put(block_uuid,data,storages)
+  if avaible(host,port):
+    con=rpyc.connect(host,port=port)
+    storage = con.root.storage()
+    storage.put(block_uuid,data,storage)
 
 def read_from_storage(block_uuid,storage):
+  LOG.info("downloading block from: " + str(storage))
   host,port = storage
-  con=rpyc.connect(host,port=port)
-  storage = con.root.storage()
-  return storage.get(block_uuid)
+  if avaible(host,port):
+    con=rpyc.connect(host,port=port)
+    storage = con.root.storage()
+    return storage.get(block_uuid)
+  return None
+
+def put(master,source,dest,fname):
+  fname = os.path.basename(fname)
+  size = os.path.getsize(source)
+  code, blocks = master.write(dest,fname,size)
+  if(code != "OK"):
+    print(code)
+    return
+  with open(source) as f:
+    for block in blocks:
+      data = f.read(master.get_block_size())
+      block_uuid = block[0]
+      for m in [master.get_storages()[_] for _ in block[1]]:
+        write_to_storage(block_uuid, data, m)
 
 def get(master,fname,dest):
   f = open(dest,"w")
@@ -37,12 +60,6 @@ def get(master,fname,dest):
     else:
         LOG.error("No blocks found. Possibly a corrupt file")
 
-def info_from_storage(block_uuid,storage):
-  host,port = storage
-  con=rpyc.connect(host,port=port)
-  storage = con.root.storage()
-  return storage.info(block_uuid)
-
 def info(master,fname):
   file_table = master.get_file_table_entry(fname)
   if not file_table:
@@ -53,9 +70,10 @@ def info(master,fname):
 
 def remove_from_storage(block_uuid,storage):
   host,port = storage
-  con=rpyc.connect(host,port=port)
-  storage = con.root.storage()
-  storage.rmv(block_uuid)
+  if avaible(host,port):
+    con=rpyc.connect(host,port=port)
+    storage = con.root.storage()
+    storage.rmv(block_uuid)
 
 def rmv(master,fname):
   file_table = master.get_file_table_entry(fname)
@@ -66,20 +84,6 @@ def rmv(master,fname):
     for m in [master.get_storages()[_] for _ in block[1]]:
       remove_from_storage(block[0], m)
   master.rmv_file_table_entry(fname)
-
-def put(master,source,dest,fname):
-  fname = os.path.basename(fname)
-  size = os.path.getsize(source)
-  code, blocks = master.write(dest,fname,size)
-  if(code != "OK"):
-    print(code)
-    return
-  with open(source) as f:
-    for b in blocks:
-      data = f.read(master.get_block_size())
-      block_uuid = b[0]
-      storages = [master.get_storages()[_] for _ in b[1]]
-      write_to_storage(block_uuid, data, storages)
 
 def f(fname):
   fname = os.path.dirname(fname)
@@ -124,7 +128,6 @@ def main(args):
     print("Please follow this instruction to connect:")
     print("python3 client.py ip port")
     return
-    
   con=rpyc.connect(master_ip,port=int(master_port),config={"allow_all_attrs": True})
   master=con.root.Master()
   #Directory operations
