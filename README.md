@@ -3,9 +3,9 @@
 ---
 # Contribution to the projects
 
-**Kerim Kochekov** namenode implementation, maintained communication between datanodes, client and namenode on AWS and system testing
+**Kerim Kochekov** namenode implementation, maintained communication between datanodes, client and namenode on AWS and docker configuration
 
-**Temurbek Khujaev** storage side implementation,  docker continerizaton configuration and system testing
+**Temurbek Khujaev** storage side implementation and system testing
 
 **Farhod Khakimiyon** Corrected formats of commands, helped to debug code and populated report with images and testing.
 
