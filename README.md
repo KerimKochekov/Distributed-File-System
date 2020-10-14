@@ -19,26 +19,21 @@ Distributed file system like HDFS. It consists of one Master (NameNode) and mult
 * run in namenode server
 
 ```
-docker pull temurbekkhujaev/namenode
-docker run -d -p 2131:2131 temurbekkhujaev/namenode
+docker pull 33123998/namenode
+docker run --rm -i -t -p 2131:2131 33123998/namenode
 ```
 * run in datanode server
 
 ```
-docker pull temurbekkhujaev/datanode
-docker run -d -p 2131:2131 temurbekkhujaev/datanode
-```
-and 
+docker pull 33123998/datanode
+docker run --rm -i -t -p 8888:8888 33123998/datanode
+``` 
   
-### How to run.
-  1. Edit `dfs.conf` in master node for setting block size, replication factor, list storages (`storageid:host:port`) and IPs of storage servers of running machines on cloud.
-  2. Fire up master and storages on cloud(AWS) with docker.
-  3. Fix the IP address in client.py to IP address of master server's running machine.
 ### Here avaiable commands with examples:
 ```sh
 1) Initialize the DFS
-$ python3 client.py init
-Creates storage directory in all storages and clean the dir-tree and files in storage
+$ python3 client.py init block_size replication_Factor
+Creates storage directory in all storages and clean the dir_tree,metadata,storages and file_Tree in storage
 
 2) Make new directory in DFS
 $ python3 client.py mkdir /dir1/dir2
