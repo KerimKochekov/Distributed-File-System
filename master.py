@@ -166,10 +166,13 @@ class MasterService(rpyc.Service):
       for storage in self.__class__.storages.keys():
         if self.__class__.marked[storage] == True:
           online.append(storage)
+      print(online)
+      print(num)
       if(len(online) < self.__class__.replication_factor):
         return None
       for _ in range(num):
         block_uuid = uuid.uuid1()
+        print(_,block_uuid)
         nodes_ids = random.sample(online,self.__class__.replication_factor)
         blocks.append((block_uuid,nodes_ids))
         self.__class__.file_table[dest].append((block_uuid,nodes_ids))
