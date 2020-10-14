@@ -9,13 +9,18 @@ import requests
 from rpyc.utils.server import ThreadedServer
 
 DATA_DIR="storage/"
+def get_ip():
+  response = requests.get('http://ipinfo.io').text
+  l = response.find("ip")+6
+  r = response.find(",")-1
+  return response[l:r]
+
 master_ip, master_port = None, None
 def int_handler(signal, frame):
   global master_ip, master_port
   con = rpyc.connect(master_ip,master_port,config={"allow_all_attrs": True})
-  master = con.root.Master()
-  hostname = socket.gethostname()     
-  ip,port = socket.gethostbyname(hostname), 8888
+  master = con.root.Master()  
+  ip,port = get_ip(), 8888
   master.disconnect_storage(ip,port)
   print("Storage {}:{} disconnected".format(ip,port))
   sys.exit(0)
@@ -56,11 +61,7 @@ class StorageService(rpyc.Service):
       con=rpyc.connect(host,port=port)
       storage = con.root.storage()
       storage.put(block_uuid,data,storages)
-def get_ip():
-  response = requests.get('http://ipinfo.io').text
-  l = response.find("ip")+6
-  r = response.find(",")-1
-  return response[l:r]
+
 
 def main(args):
   global master_ip, master_port
