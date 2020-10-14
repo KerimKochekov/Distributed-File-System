@@ -17,6 +17,10 @@ def int_handler(signal, frame):
   pickle.dump(MasterService.exposed_Master.file_table, file)
   pickle.dump(MasterService.exposed_Master.tree, file)
   pickle.dump(MasterService.exposed_Master.metadata, file)
+  pickle.dump(MasterService.exposed_Master.block_size, file)
+  pickle.dump(MasterService.exposed_Master.replication_factor, file)
+  pickle.dump(MasterService.exposed_Master.marked, file)
+  pickle.dump(MasterService.exposed_Master.storages, file)
   file.close()
   sys.exit(0)
 
@@ -26,6 +30,10 @@ def load():
     MasterService.exposed_Master.file_table = pickle.load(file)
     MasterService.exposed_Master.tree = pickle.load(file)
     MasterService.exposed_Master.metadata = pickle.load(file)
+    MasterService.exposed_Master.block_size = pickle.load(file)
+    MasterService.exposed_Master.replication_factor = pickle.load(file)
+    MasterService.exposed_Master.marked = pickle.load(file)
+    MasterService.exposed_Master.storages = pickle.load(file)
     file.close()
 
 class MasterService(rpyc.Service):
@@ -63,6 +71,8 @@ class MasterService(rpyc.Service):
       self.__class__.metadata = dict()
       self.__class__.tree[DATA_DIR].append('$')
       for storage in self.__class__.storages:
+        if self.__class__.marked[storage] == False:
+          continue
         host,port = self.__class__.storages[storage]
         con = rpyc.connect(host,port=port)
         storage = con.root.storage()
@@ -115,6 +125,8 @@ class MasterService(rpyc.Service):
       num_blocks = self.numof_blocks(size)
       self.__class__.metadata[dest+source]=[size,num_blocks]
       blocks = self.alloc_blocks(dest+source,num_blocks)
+      if(blocks == None):
+        return "Storage servers less than replication factor", []
       return "OK", blocks
 
     def exposed_get_file_table_entry(self,fname):
@@ -150,10 +162,15 @@ class MasterService(rpyc.Service):
       return len(self.__class__.tree[file]) > 0
 
     def alloc_blocks(self,dest,num):
-      blocks = []
+      blocks,online = [],[]
+      for storage in self.__class__.storages.keys():
+        if self.__class__.marked[storage] == True:
+          online.append(storage)
+      if(len(online) < self.__class__.replication_factor):
+        return None
       for _ in range(num):
         block_uuid = uuid.uuid1()
-        nodes_ids = random.sample(self.__class__.storages.keys(),self.__class__.replication_factor)
+        nodes_ids = random.sample(online,self.__class__.replication_factor)
         blocks.append((block_uuid,nodes_ids))
         self.__class__.file_table[dest].append((block_uuid,nodes_ids))
 
