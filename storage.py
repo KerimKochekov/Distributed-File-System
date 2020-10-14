@@ -10,7 +10,6 @@ from rpyc.utils.server import ThreadedServer
 
 DATA_DIR="storage/"
 def get_ip():
-  return "127.0.1.1"
   response = requests.get('http://ipinfo.io').text
   l = response.find("ip")+6
   r = response.find(",")-1
